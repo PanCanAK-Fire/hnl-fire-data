@@ -1,0 +1,26 @@
+[project]
+authors = [{name = "Chris Waigl", email = "chris.waigl@gmail.com"}]
+dependencies = []
+name = "hnl-fire-data"
+requires-python = ">= 3.11"
+version = "0.1.0"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+[tool.pixi.pypi-dependencies]
+hnl_fire_data = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+python = ">=3.12"
+requests = ">=2.32.3,<3"
+pandas = ">=2.2.3,<3"
+jupyter = ">=1.1.1,<2"
+nb-clean = ">=4.0.1,<5"
