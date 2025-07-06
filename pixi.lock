@@ -827,7 +827,7 @@ packages:
 - pypi: ./
   name: hnl-fire-data
   version: 0.1.0
-  sha256: c907de037e8b1fdc110f3642aa062710ea9af990fd379333c010e068670d640e
+  sha256: a73c99dc5ea2739ee1a5ed40df7099a3889bf4001cf1765db93b7ed4e09dd6a6
   requires_python: '>=3.11,<3.13'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
