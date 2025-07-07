@@ -2,6 +2,7 @@ import requests
 import json
 import datetime as dt
 import time
+from pathlib import Path
 
 TODAY = dt.datetime.now() 
 TODAY_START = TODAY.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -15,7 +16,9 @@ DATASETS = {
     4: {'label': 'last_two_weeks', 'dayoffset': 4},
 }
 SELECTED = [0, 1, 2, 3, 4]  # which datasets we want
-# SELECTED = [2]  # which datasets we want
+AGGREGATE = True    # whether we want to aggregate the data into a single file 
+AGG_FN = f"all_lightning_{TODAY.year}.fth"
+OUTDIR = Path().absolute().parents[1] / "data/AICC_lightning"
 
 def datadate(dsidx):
     """Get date of lightning data based on which service is accessed"""
@@ -85,7 +88,6 @@ def download_lightning_data(dsidx=0):
         except json.JSONDecodeError as e:
             print(f"JSON decode error: {e}")
             break
-    
     return all_features
 
 def get_lightning_data(dsidx=0):
@@ -115,7 +117,7 @@ def save_data(features_with_metadata, filename=None):
     label = features_with_metadata['metadata']['data_label']
     filename = f"alaska_lightning_{TODAY.strftime('%Y%m%d')}_{label}.json"
 
-    with open(filename, 'w') as f:
+    with open(OUTDIR / filename, 'w') as f:
         json.dump(features_with_metadata, f, indent=2)
     print(f"Data saved to {filename}")
     return filename
@@ -166,5 +168,7 @@ def main():
         else:
             print(f"\nNo lightning data found for {DATASETS[idx]['label'].replace('_',' ')}.")
 
+    # Create ground strokes and daily lightning file 
+    
 if __name__ == "__main__":
     main()
