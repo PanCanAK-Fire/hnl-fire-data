@@ -11,7 +11,7 @@ requires = ["hatchling"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64", "osx-64"]
 
 [tool.pixi.pypi-dependencies]
 hnl_fire_data = { path = ".", editable = true }
@@ -31,3 +31,4 @@ fastexcel = ">=0.14.0,<0.15"
 openpyxl = ">=3.1.5,<4"
 pytables = ">=3.10.2,<4"
 colorcet = ">=3.1.0,<4"
+altair-all = ">=5.5.0,<6"
