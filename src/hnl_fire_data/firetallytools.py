@@ -167,6 +167,7 @@ def combine_daily_totals(olddata: pd.DataFrame,
 
 def plot_dailyarea_by_region(dailyareaDF: pd.DataFrame,
                              region: str,
+                             areathreshold: int=3000,
                              figdir: Path=None,
                              plotday: str=None,
                              savefig=True) -> None:
@@ -178,10 +179,16 @@ def plot_dailyarea_by_region(dailyareaDF: pd.DataFrame,
     mpl.rcParams['figure.dpi'] = 150
     sns.set_theme('paper')
     sns.set_style('whitegrid')
+    if region not in GROUPINGS.keys():
+        raise ValueError(f"Region {region} not recognized. Try one of {', '.join(GROUPINGS.keys())}")
+    PLOTVAR = GROUPINGS[region][PLOTVAR_idx[region]]
+    if areathreshold:
+        big_fires_PSAS = dailyareaDF[dailyareaDF.Acres > areathreshold].sort_values(
+            'Acres', ascending=False).drop_duplicates(PLOTVAR)[PLOTVAR].to_list()
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.lineplot(data=dailyareaDF.loc[PLOTSTARTDATE:], x='reportdate', y='Acres', 
-                hue=GROUPINGS[region][PLOTVAR_idx[region]], ax=ax, palette=sns.color_palette(cc.glasbey_dark))
-    plt.title(f"{YEAR} daily area burned by {GROUPINGS[region][PLOTVAR_idx[region]]} (from AICC Situation Reports)")
+                hue=PLOTVAR, ax=ax, palette=sns.color_palette(cc.glasbey_dark))
+    plt.title(f"{YEAR} daily area burned by {PLOTVAR} (from AICC Situation Reports)")
     plt.xlabel("Date of situation report")
     ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
     plt.tight_layout()
