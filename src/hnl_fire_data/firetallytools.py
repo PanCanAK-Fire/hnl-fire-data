@@ -82,8 +82,10 @@ def assemble_dataframe(datadir:Path,
         current['reportdate'] = datestamp
         current.drop(columns=['OBJECTID'], inplace=True)
         results.append(current)
-    all_updates = pd.concat(results).sort_values(['reportdate'])
+    all_updates = pd.concat(results).sort_values(['reportdate'], ignore_index=True)
     all_updates['reportdate'] = pd.to_datetime(all_updates['reportdate'])
+    all_updates['Narrative'] = all_updates['Narrative'].str.replace(r'[\n\r]', ' ', regex=True)
+    all_updates['Fire Number'] = all_updates['Fire Number'].fillna(0).astype(int)
     all_updates['Protecting Office'] = all_updates['Protecting Office'].fillna("n/a")
     all_updates['Protecting Office'] = all_updates.apply(extract_zone, axis=1)
     protecting_offices_rev = {
@@ -132,11 +134,14 @@ def load_old_data(olddatafp: Path) -> pd.DataFrame:
     dropcols = [col for col in olddata.columns if col.startswith('Unname')] 
     olddata.drop(columns=dropcols+['ID'], inplace=True)
     intcols = list(olddata.columns.difference(['TotalAcres', 'ProtectionUnit', 'SitReportDate']))
+    print(intcols)
     for col in intcols:
         if olddata[col].isna().any():
             olddata.drop(columns=[col], inplace=True)
-        else:
+        try:
             olddata[col] = olddata[col].astype(int)
+        except KeyError: 
+            pass
     olddata.rename(columns={'FireSeason': 'Year'}, inplace=True)
     olddata['reportdate'] = pd.to_datetime(olddata[['Year', 'Month', 'Day']])
     olddata.drop(columns=['SitReportDate'], inplace=True)
@@ -182,13 +187,21 @@ def plot_dailyarea_by_region(dailyareaDF: pd.DataFrame,
     if region not in GROUPINGS.keys():
         raise ValueError(f"Region {region} not recognized. Try one of {', '.join(GROUPINGS.keys())}")
     PLOTVAR = GROUPINGS[region][PLOTVAR_idx[region]]
+    infix = ''
     if areathreshold:
-        big_fires_PSAS = dailyareaDF[dailyareaDF.Acres > areathreshold].sort_values(
+        big_fires_regions = dailyareaDF[dailyareaDF.Acres > areathreshold].sort_values(
             'Acres', ascending=False).drop_duplicates(PLOTVAR)[PLOTVAR].to_list()
+        dailyareaDF = dailyareaDF[dailyareaDF[PLOTVAR].isin(big_fires_regions)].loc[PLOTSTARTDATE:]
+        dailyareaDF[PLOTVAR] = dailyareaDF[PLOTVAR].astype("category")
+        dailyareaDF[PLOTVAR] = dailyareaDF[PLOTVAR].cat.set_categories(big_fires_regions)
+        dailyareaDF.sort_values(PLOTVAR, inplace=True)
+        infix = f'regions > {areathreshold:,} acres burned '
+    else:
+        dailyareaDF.loc[PLOTSTARTDATE:]
     fig, ax = plt.subplots(figsize=(10, 6))
-    sns.lineplot(data=dailyareaDF.loc[PLOTSTARTDATE:], x='reportdate', y='Acres', 
-                hue=PLOTVAR, ax=ax, palette=sns.color_palette(cc.glasbey_dark))
-    plt.title(f"{YEAR} daily area burned by {PLOTVAR} (from AICC Situation Reports)")
+    sns.lineplot(data=dailyareaDF, x='reportdate', y='Acres', 
+                hue=PLOTVAR, ax=ax, palette=sns.color_palette(cc.glasbey))
+    plt.title(f"{YEAR} daily area burned by {PLOTVAR} {infix}(from AICC Situation Reports)")
     plt.xlabel("Date of situation report")
     ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
     plt.tight_layout()
@@ -218,10 +231,12 @@ def plot_dailytotals_by_year(dailyareaDF: pd.DataFrame,
     fig, ax = plt.subplots(figsize=(10, 6))
     if olddata:
         dailyareaDF['reportdate'] = dailyareaDF.reportdate.map(lambda t: t.replace(year=YEAR))
+        infix = ''
         if annualthreshold:
             big_fires_years = dailyareaDF[dailyareaDF.Acres > annualthreshold].sort_values(
                 'Acres', ascending=False).drop_duplicates('Year').Year.to_list()
             dailyareaDF = dailyareaDF[dailyareaDF.Year.isin(big_fires_years)]
+            infix = f" (years > {annualthreshold:,} acres total)"
         sns.lineplot(data=dailyareaDF, x='reportdate', y='Acres', 
                     hue='Year', ax=ax, palette=sns.color_palette(cc.glasbey))
         ax.xaxis.set_major_formatter(mpl.dates.DateFormatter('%m-%d'))
