@@ -1,5 +1,5 @@
 # do not check in data directory
-data/
+# data/
 
 # pixi environments
 .pixi
